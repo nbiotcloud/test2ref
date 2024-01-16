@@ -2,6 +2,7 @@
 *.xml
 .coverage
 .tox
+.test2ref
 .venv
 .mypy_cache
 /.vscode

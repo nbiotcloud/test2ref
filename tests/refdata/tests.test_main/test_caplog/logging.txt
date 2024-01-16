@@ -1,0 +1,2 @@
+INFO     dummy  loginfo
+WARNING  dummy  logwarn

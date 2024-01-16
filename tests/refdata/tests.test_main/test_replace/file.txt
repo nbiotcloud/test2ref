@@ -1,0 +1,4 @@
+Something
+ RAINBOW Multiple Lines
+ With $GEN/inside
+ $OTHER_PATH too
