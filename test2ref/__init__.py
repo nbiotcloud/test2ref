@@ -75,7 +75,7 @@ Excludes = Tuple[str, ...]
 
 DEFAULT_REF_PATH: Path = PRJ_PATH / "tests" / "refdata"
 DEFAULT_REF_UPDATE: bool = (PRJ_PATH / ".test2ref").exists()
-DEFAULT_EXCLUDES: Excludes = ("__pycache__", "*_cache")
+DEFAULT_EXCLUDES: Excludes = ("__pycache__", ".*cache")
 CONFIG = {
     "ref_path": DEFAULT_REF_PATH,
     "ref_update": DEFAULT_REF_UPDATE,
@@ -156,7 +156,9 @@ def assert_refdata(
             copytree(gen_path, ref_path)
 
         try:
-            cmd = ("diff", "-ru", str(ref_path), str(gen_path))
+            cmd = ["diff", "-ru", str(ref_path), str(gen_path)]
+            for exclude in gen_excludes:
+                cmd.extend(("--exclude", exclude))
             subprocess.run(cmd, check=True, capture_output=True)
         except subprocess.CalledProcessError as error:
             raise AssertionError(error.stdout.decode("utf-8")) from None

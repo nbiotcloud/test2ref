@@ -144,3 +144,62 @@ def test_replace(tmp_path: Path):
         ("Over", "RAINBOW"),
     ]
     assert_refdata(test_replace, one_path, replacements=replacements)
+
+
+def test_default_excludes(tmp_path: Path):
+    """Text Default Excludes."""
+
+    (tmp_path / "file.txt").touch()
+    (tmp_path / "__pycache__").mkdir()
+    (tmp_path / "__pycache__" / "file.pyc").touch()
+    (tmp_path / ".tool_cache").mkdir()
+    (tmp_path / ".tool_cache" / "file.pyc").touch()
+    (tmp_path / "sub" / ".tool_cache").mkdir(parents=True)
+    (tmp_path / "sub" / ".tool_cache" / "file.pyc").touch()
+    (tmp_path / "sub" / "__pycache__").mkdir(parents=True)
+    (tmp_path / "sub" / "__pycache__" / "file.txt").touch()
+    (tmp_path / "sub" / ".cache").touch()
+
+    configure(ref_update=False)
+    assert_refdata(test_default_excludes, tmp_path)
+
+    assert (tmp_path / "file.txt").exists()
+    assert (tmp_path / "__pycache__" / "file.pyc").exists()
+    assert (tmp_path / ".tool_cache" / "file.pyc").exists()
+    assert (tmp_path / "sub" / ".tool_cache" / "file.pyc").exists()
+    assert (tmp_path / "sub" / ".cache").exists()
+
+    ref_path = Path.cwd() / "tests" / "refdata" / "tests.test_main" / "test_default_excludes"
+    assert (ref_path / "file.txt").exists()
+    assert not (ref_path / "__pycache__").exists()
+    assert not (ref_path / ".tool_cache").exists()
+    assert not (ref_path / "sub" / ".tool_cache" / "file.pyc").exists()
+    assert not (ref_path / "sub" / "__pycache__").exists()
+    assert not (ref_path / "sub" / ".cache").exists()
+
+
+def test_excludes(tmp_path: Path):
+    """Text Excludes."""
+    ref_path = Path.cwd() / "tests" / "refdata" / "tests.test_main" / "test_excludes"
+
+    (tmp_path / "file.txt").touch()
+    (tmp_path / "file.csv").touch()
+    (tmp_path / "__pycache__").mkdir()
+    (tmp_path / "__pycache__" / "file.pyc").touch()
+    (tmp_path / ".tool_cache").mkdir()
+    (tmp_path / ".tool_cache" / "file.pyc").touch()
+
+    (ref_path / "__pycache__").mkdir(exist_ok=True)
+    (ref_path / "__pycache__" / "file.pyc").touch()
+
+    configure(ref_update=False)
+    assert_refdata(test_excludes, tmp_path, excludes=("*.txt",))
+
+    assert (tmp_path / "file.txt").exists()
+    assert (tmp_path / "file.csv").exists()
+    assert (tmp_path / "__pycache__" / "file.pyc").exists()
+    assert (tmp_path / ".tool_cache" / "file.pyc").exists()
+    assert not (ref_path / "file.txt").exists()
+    assert (ref_path / "file.csv").exists()
+    assert (ref_path / "__pycache__").exists()
+    assert not (ref_path / ".tool_cache").exists()
