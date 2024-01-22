@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "test2ref"
-version = "0.3.0"
+version = "0.4.0"
 description = "Testing Against Learned Reference Data"
 readme = "README.md"
 license = "MIT"
