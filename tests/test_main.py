@@ -29,7 +29,15 @@ from unittest.mock import patch
 
 from pytest import mark, raises
 
-from test2ref import CONFIG, DEFAULT_EXCLUDES, DEFAULT_REF_PATH, DEFAULT_REF_UPDATE, assert_refdata, configure
+from test2ref import (
+    CONFIG,
+    DEFAULT_EXCLUDES,
+    DEFAULT_REF_PATH,
+    DEFAULT_REF_UPDATE,
+    assert_paths,
+    assert_refdata,
+    configure,
+)
 
 LOGGER = logging.getLogger("dummy")
 
@@ -203,3 +211,23 @@ def test_excludes(tmp_path: Path):
     assert (ref_path / "file.csv").exists()
     assert (ref_path / "__pycache__").exists()
     assert not (ref_path / ".tool_cache").exists()
+
+
+def test_assert_paths(tmp_path):
+    """Test Assert Paths."""
+    ref_path = tmp_path / "ref"
+    ref_path.mkdir()
+    (ref_path / "file.txt").write_text("One\n")
+
+    one_path = tmp_path / "one"
+    one_path.mkdir()
+    (one_path / "file.txt").write_text("One\n")
+
+    other_path = tmp_path / "other"
+    other_path.mkdir()
+    (other_path / "file.txt").write_text("other\n")
+
+    assert_paths(ref_path, one_path)
+
+    with raises(AssertionError):
+        assert_paths(ref_path, other_path)

@@ -155,13 +155,28 @@ def assert_refdata(
             rmtree(ref_path, ignore_errors=True)
             copytree(gen_path, ref_path)
 
-        try:
-            cmd = ["diff", "-ru", str(ref_path), str(gen_path)]
-            for exclude in gen_excludes:
-                cmd.extend(("--exclude", exclude))
-            subprocess.run(cmd, check=True, capture_output=True)
-        except subprocess.CalledProcessError as error:
-            raise AssertionError(error.stdout.decode("utf-8")) from None
+        assert_paths(ref_path, gen_path, excludes=excludes)
+
+
+def assert_paths(ref_path: Path, gen_path: Path, excludes: Optional[List[str]] = None):
+    """
+    Compare Output of `ref_path` with `gen_path`.
+
+    Args:
+        ref_path: Path with reference files to be compared.
+        gen_path: Path with generated files to be compared.
+
+    Keyword Args:
+        excludes: Files and directories to be excluded.
+    """
+    diff_excludes: Excludes = [*CONFIG["excludes"], *(excludes or [])]  # type: ignore
+    try:
+        cmd = ["diff", "-ru", str(ref_path), str(gen_path)]
+        for exclude in diff_excludes:
+            cmd.extend(("--exclude", exclude))
+        subprocess.run(cmd, check=True, capture_output=True)
+    except subprocess.CalledProcessError as error:
+        raise AssertionError(error.stdout.decode("utf-8")) from None
 
 
 def _remove_empty_dirs(path: Path):
