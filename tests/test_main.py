@@ -231,3 +231,27 @@ def test_assert_paths(tmp_path):
 
     with raises(AssertionError):
         assert_paths(ref_path, other_path)
+
+
+def test_path_replacements(tmp_path):
+    """Path Replacements."""
+    replacements = [
+        ("one", "two"),
+        ("three", "four"),
+    ]
+    deep_path = tmp_path / "someone" / "has" / "three" / "dirs"
+    deep_path.mkdir(parents=True)
+    (deep_path / "file").touch()
+    (deep_path / "empty").mkdir()
+    (tmp_path / "someone" / "has" / "three.txt").touch()
+
+    configure(ref_update=True)
+    assert_refdata(test_path_replacements, tmp_path, replacements=replacements)
+
+    assert (tmp_path / "someone" / "has" / "three" / "dirs" / "file").exists()
+    assert (tmp_path / "someone" / "has" / "three.txt").exists()
+
+    ref_path = Path.cwd() / "tests" / "refdata" / "tests.test_main" / "test_path_replacements"
+    assert (ref_path / "sometwo" / "has" / "four" / "dirs" / "file").exists()
+    assert (ref_path / "sometwo" / "has" / "four.txt").exists()
+    assert not (ref_path / "sometwo" / "has" / "four" / "dirs" / "empty").exists()
