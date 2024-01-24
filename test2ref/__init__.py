@@ -70,6 +70,7 @@ PRJ_PATH = Path.cwd()
 
 PathOrStr = Union[Path, str]
 Replacements = List[Tuple[PathOrStr, str]]
+StrReplacements = List[Tuple[str, str]]
 Excludes = Tuple[str, ...]
 
 
@@ -127,7 +128,9 @@ def assert_refdata(
     # pylint: disable=too-many-locals
     ref_path = CONFIG["ref_path"] / testfunc.__module__ / testfunc.__name__
     ref_path.mkdir(parents=True, exist_ok=True)
-    gen_replacements: Replacements = [(PRJ_PATH, "$PRJ"), (path, "$GEN"), *(replacements or ())]
+    rplcs: Replacements = replacements or ()  # type: ignore
+    path_rplcs: StrReplacements = [(srch, rplc) for srch, rplc in rplcs if isinstance(srch, str)]
+    gen_rplcs: Replacements = [(PRJ_PATH, "$PRJ"), (path, "$GEN"), *rplcs]
     gen_excludes: Excludes = [*CONFIG["excludes"], *(excludes or [])]  # type: ignore
 
     with TemporaryDirectory() as temp_dir:
@@ -135,6 +138,8 @@ def assert_refdata(
 
         ignore = ignore_patterns(*gen_excludes)
         copytree(path, gen_path, dirs_exist_ok=True, ignore=ignore)
+
+        _replace_path(gen_path, path_rplcs)
 
         if capsys:
             captured = capsys.readouterr()
@@ -149,7 +154,7 @@ def assert_refdata(
 
         _remove_empty_dirs(gen_path)
 
-        _replace(gen_path, gen_replacements)
+        _replace_content(gen_path, gen_rplcs)
 
         if CONFIG["ref_update"]:
             rmtree(ref_path, ignore_errors=True)
@@ -194,7 +199,20 @@ def _remove_empty_dirs(path: Path):
                 break
 
 
-def _replace(path: Path, replacements: Replacements):
+def _replace_path(path: Path, replacements: StrReplacements):
+    paths = [path]
+    while paths:
+        path = paths.pop()
+        orig = name = path.name
+        for srch, rplc in replacements:
+            name = name.replace(srch, rplc)
+        if orig != name:
+            path = path.replace(path.with_name(name))
+        if path.is_dir():
+            paths.extend(path.iterdir())
+
+
+def _replace_content(path: Path, replacements: Replacements):
     """Replace ``replacements`` for text files in ``path``."""
     # pre-compile regexs and create substition functions
     regexs = [(_compile(search), _substitute_func(replace)) for search, replace in replacements]
@@ -203,9 +221,12 @@ def _replace(path: Path, replacements: Replacements):
         if not sub_path.is_file() or is_binary(str(sub_path)):
             continue
         content = sub_path.read_text()
+        total = 0
         for regex, func in regexs:
-            content = regex.sub(func, content)
-        sub_path.write_text(content)
+            content, counts = regex.subn(func, content)
+            total += counts
+        if total:
+            sub_path.write_text(content)
 
 
 def _compile(search: PathOrStr) -> re.Pattern:
