@@ -22,18 +22,19 @@
 # SOFTWARE.
 #
 """Basic Testing."""
+
 import logging
 import sys
 from pathlib import Path
 from unittest.mock import patch
 
 from pytest import mark, raises
-
 from test2ref import (
     CONFIG,
     DEFAULT_EXCLUDES,
     DEFAULT_REF_PATH,
     DEFAULT_REF_UPDATE,
+    Replacements,
     assert_paths,
     assert_refdata,
     configure,
@@ -139,15 +140,14 @@ def test_caplog(tmp_path: Path, caplog, fail: bool):
 
 def test_replace(tmp_path: Path):
     """Test Replacements."""
-
     one_path = tmp_path / "one" / "deep"
     other_path = tmp_path / "other"
 
     one_path.mkdir(parents=True)
-    (one_path / "file.txt").write_text(f"Something\n Over Multiple Lines\n With {one_path}/inside\n {other_path} too")
+    (one_path / "file.txt").write_text(f"Something\n Over Multiple Lines\n With {one_path}/inside\n {other_path} too\n")
 
     configure(ref_update=False)
-    replacements = [
+    replacements: Replacements = [
         (other_path, "$OTHER_PATH"),
         ("Over", "RAINBOW"),
     ]
@@ -156,7 +156,6 @@ def test_replace(tmp_path: Path):
 
 def test_default_excludes(tmp_path: Path):
     """Text Default Excludes."""
-
     (tmp_path / "file.txt").touch()
     (tmp_path / "__pycache__").mkdir()
     (tmp_path / "__pycache__" / "file.pyc").touch()

@@ -44,34 +44,35 @@ If the files does **not** exists, the **Testing Mode** is selected.
 
 Next to that, stdout, stderr and logging can be included in the reference automatically.
 
-Example
+Example:
 -------
-
->>> def test_something(tmp_path, capsys):
-...     (tmp_path / "file.txt").write_text("Hello Mars")
-...     print("Hello World")
-...     assert_refdata(test_something, tmp_path, capsys=capsys)
+    >>> def test_something(tmp_path, capsys):
+    ...     (tmp_path / "file.txt").write_text("Hello Mars")
+    ...     print("Hello World")
+    ...     assert_refdata(test_something, tmp_path, capsys=capsys)
 
 API
 ---
 
 """
+
 import os
 import re
 import subprocess
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from shutil import copytree, ignore_patterns, rmtree
 from tempfile import TemporaryDirectory
-from typing import List, Optional, Tuple, Union
+from typing import Any
 
 from binaryornot.check import is_binary
 
 PRJ_PATH = Path.cwd()
 
-PathOrStr = Union[Path, str]
-Replacements = List[Tuple[PathOrStr, str]]
-StrReplacements = List[Tuple[str, str]]
-Excludes = Tuple[str, ...]
+PathOrStr = Path | str
+Replacements = Iterable[tuple[PathOrStr, str]]
+StrReplacements = Iterable[tuple[str, str]]
+Excludes = tuple[str, ...]
 
 
 DEFAULT_REF_PATH: Path = PRJ_PATH / "tests" / "refdata"
@@ -84,7 +85,7 @@ CONFIG = {
 }
 
 
-def configure(ref_path: Optional[Path] = None, ref_update: Optional[bool] = None, excludes: Optional[Excludes] = None):
+def configure(ref_path: Path | None = None, ref_update: bool | None = None, excludes: Excludes | None = None):
     """
     Configure.
 
@@ -102,12 +103,12 @@ def configure(ref_path: Optional[Path] = None, ref_update: Optional[bool] = None
 
 
 def assert_refdata(
-    testfunc,
+    testfunc: Callable,
     path: Path,
-    capsys=None,
-    caplog=None,
-    replacements: Optional[Replacements] = None,
-    excludes: Optional[List[str]] = None,
+    capsys: Any = None,
+    caplog: Any = None,
+    replacements: Replacements | None = None,
+    excludes: Iterable[str] | None = None,
 ):  # pylint: disable=too-many-arguments
     """
     Compare Output of `testfunc` generated at `path` with reference.
@@ -126,12 +127,12 @@ def assert_refdata(
         excludes: Files and directories to be excluded.
     """
     # pylint: disable=too-many-locals
-    ref_path = CONFIG["ref_path"] / testfunc.__module__ / testfunc.__name__
+    ref_path = CONFIG["ref_path"] / testfunc.__module__ / testfunc.__name__  # type: ignore[operator]
     ref_path.mkdir(parents=True, exist_ok=True)
-    rplcs: Replacements = replacements or ()  # type: ignore
+    rplcs: Replacements = replacements or ()  # type: ignore[assignment]
     path_rplcs: StrReplacements = [(srch, rplc) for srch, rplc in rplcs if isinstance(srch, str)]
     gen_rplcs: Replacements = [(PRJ_PATH, "$PRJ"), (path, "$GEN"), *rplcs]
-    gen_excludes: Excludes = [*CONFIG["excludes"], *(excludes or [])]  # type: ignore
+    gen_excludes: Excludes = (*CONFIG["excludes"], *(excludes or []))
 
     with TemporaryDirectory() as temp_dir:
         gen_path = Path(temp_dir)
@@ -147,7 +148,8 @@ def assert_refdata(
             (gen_path / "stderr.txt").write_text(captured.err)
 
         if caplog:
-            with open(gen_path / "logging.txt", "w", encoding="utf-8") as file:
+            logpath = gen_path / "logging.txt"
+            with logpath.open("w", encoding="utf-8") as file:
                 for record in caplog.records:
                     file.write(f"{record.levelname:7s}  {record.name}  {record.message}\n")
             caplog.clear()
@@ -163,7 +165,7 @@ def assert_refdata(
         assert_paths(ref_path, gen_path, excludes=excludes)
 
 
-def assert_paths(ref_path: Path, gen_path: Path, excludes: Optional[List[str]] = None):
+def assert_paths(ref_path: Path, gen_path: Path, excludes: Iterable[str] | None = None):
     """
     Compare Output of `ref_path` with `gen_path`.
 
@@ -174,12 +176,12 @@ def assert_paths(ref_path: Path, gen_path: Path, excludes: Optional[List[str]] =
     Keyword Args:
         excludes: Files and directories to be excluded.
     """
-    diff_excludes: Excludes = [*CONFIG["excludes"], *(excludes or [])]  # type: ignore
+    diff_excludes: Excludes = (*CONFIG["excludes"], *(excludes or []))
     try:
         cmd = ["diff", "-ru", str(ref_path), str(gen_path)]
         for exclude in diff_excludes:
             cmd.extend(("--exclude", exclude))
-        subprocess.run(cmd, check=True, capture_output=True)
+        subprocess.run(cmd, check=True, capture_output=True)  # noqa: S603
     except subprocess.CalledProcessError as error:
         raise AssertionError(error.stdout.decode("utf-8")) from None
 
@@ -214,7 +216,7 @@ def _replace_path(path: Path, replacements: StrReplacements):
 
 def _replace_content(path: Path, replacements: Replacements):
     """Replace ``replacements`` for text files in ``path``."""
-    # pre-compile regexs and create substition functions
+    # pre-compile regexs and create substitution functions
     regexs = [(_compile(search), _substitute_func(replace)) for search, replace in replacements]
     # search files and replace
     for sub_path in tuple(path.glob("**/*")):
