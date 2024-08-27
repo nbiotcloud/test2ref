@@ -22,14 +22,16 @@
 # SOFTWARE.
 #
 """Test Utilities."""
+
 import contextlib
 import os
+import pathlib
 
 
 @contextlib.contextmanager
 def chdir(path):
     """Change Working Directory to ``path``."""
-    curdir = os.getcwd()
+    curdir = pathlib.Path.cwd()
     try:
         os.chdir(path)
         yield
