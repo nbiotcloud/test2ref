@@ -103,21 +103,22 @@ def configure(ref_path: Path | None = None, ref_update: bool | None = None, excl
 
 
 def assert_refdata(
-    testfunc: Callable,
+    arg: Callable | Path,
     path: Path,
     capsys: Any = None,
     caplog: Any = None,
     replacements: Replacements | None = None,
     excludes: Iterable[str] | None = None,
+    flavor: str = "",
 ):  # pylint: disable=too-many-arguments
     """
-    Compare Output of `testfunc` generated at `path` with reference.
+    Compare Output of `arg` generated at `path` with reference.
 
     Use `replacements` to mention things which vary from test to test.
     `path` and the project location are already replaced by default.
 
     Args:
-        testfunc: Test Function
+        arg: Test Function or Path to reference data
         path: Path with generated files to be compared.
 
     Keyword Args:
@@ -125,9 +126,16 @@ def assert_refdata(
         caplog: pytest `caplog` fixture. Include logging output too.
         replacements: pairs of things to be replaced.
         excludes: Files and directories to be excluded.
+        flavor: Flavor for different variants.
     """
     # pylint: disable=too-many-locals
-    ref_path = CONFIG["ref_path"] / testfunc.__module__ / testfunc.__name__  # type: ignore[operator]
+    ref_basepath: Path = CONFIG["ref_path"]  # type: ignore[assignment]
+    if isinstance(arg, Path):
+        ref_path = ref_basepath / arg
+    else:
+        ref_path = ref_basepath / arg.__module__ / arg.__name__
+    if flavor:
+        ref_path = ref_path / flavor
     ref_path.mkdir(parents=True, exist_ok=True)
     rplcs: Replacements = replacements or ()  # type: ignore[assignment]
     path_rplcs: StrReplacements = [(srch, rplc) for srch, rplc in rplcs if isinstance(srch, str)]

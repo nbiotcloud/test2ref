@@ -254,3 +254,48 @@ def test_path_replacements(tmp_path):
     assert (ref_path / "sometwo" / "has" / "four" / "dirs" / "file").exists()
     assert (ref_path / "sometwo" / "has" / "four.txt").exists()
     assert not (ref_path / "sometwo" / "has" / "four" / "dirs" / "empty").exists()
+
+
+def test_path_abs(tmp_path):
+    """Explicit Absolute Path."""
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    gen_path.mkdir()
+
+    assert not (ref_path / "file.txt").exists()
+    (gen_path / "file.txt").write_text("Content")
+
+    configure(ref_update=True)
+    assert_refdata(ref_path, gen_path)
+
+    assert (ref_path / "file.txt").read_text() == "Content"
+
+
+def test_path_rel(tmp_path):
+    """Explicit Relative Path."""
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    gen_path.mkdir()
+
+    assert not (ref_path / "file.txt").exists()
+    (gen_path / "file.txt").write_text("Content")
+
+    configure(ref_update=True, ref_path=tmp_path)
+    assert_refdata(Path("ref"), gen_path)
+
+    assert (ref_path / "file.txt").read_text() == "Content"
+
+
+def test_flavor(tmp_path):
+    """Flavor."""
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    gen_path.mkdir()
+
+    (gen_path / "file.txt").write_text("Content")
+
+    configure(ref_update=True)
+    assert_refdata(ref_path, gen_path, flavor="one")
+
+    assert not (ref_path / "file.txt").exists()
+    assert (ref_path / "one" / "file.txt").read_text() == "Content"
