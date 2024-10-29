@@ -63,16 +63,26 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from shutil import copytree, ignore_patterns, rmtree
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import Any, TypeAlias
 
 from binaryornot.check import is_binary
 
 PRJ_PATH = Path.cwd()
 
-PathOrStr = Path | str
-Replacements = Iterable[tuple[PathOrStr, str]]
-StrReplacements = Iterable[tuple[str, str]]
-Excludes = tuple[str, ...]
+Search: TypeAlias = Path | str | re.Pattern
+"""
+Possible Search Pattern.
+
+File System Path, string or regular expression.
+"""
+
+Replacements: TypeAlias = Iterable[tuple[Search, str]]
+"""
+Replacements - Pairs of Search Pattern and Things to be Replaced.
+"""
+
+StrReplacements: TypeAlias = Iterable[tuple[str, str]]
+Excludes: TypeAlias = tuple[str, ...]
 
 
 DEFAULT_REF_PATH: Path = PRJ_PATH / "tests" / "refdata"
@@ -127,6 +137,32 @@ def assert_refdata(
         replacements: pairs of things to be replaced.
         excludes: Files and directories to be excluded.
         flavor: Flavor for different variants.
+
+    !!! example "Minimal Example"
+
+        ```python
+        def test_example(tmp_path):
+            (tmp_path / "file.txt").write_text("Content")
+            assert_refdata(test_example, tmp_path)
+        ```
+
+    !!! example "Full Example"
+
+        ```python
+        import logging
+
+        def test_example(tmp_path, capsys, caplog):
+            (tmp_path / "file.txt").write_text("Content")
+
+            # print on standard-output - captured by capsys
+            print("Hello World")
+
+            # logging - captured by caplog
+            logging.getLogger().warning("test")
+
+            assert_refdata(test_example, tmp_path, capsys=capsys, caplog=caplog)
+        ```
+
     """
     # pylint: disable=too-many-locals
     ref_basepath: Path = CONFIG["ref_path"]  # type: ignore[assignment]
@@ -225,31 +261,35 @@ def _replace_path(path: Path, replacements: StrReplacements):
 def _replace_content(path: Path, replacements: Replacements):
     """Replace ``replacements`` for text files in ``path``."""
     # pre-compile regexs and create substitution functions
-    regexs = [(_compile(search), _substitute_func(replace)) for search, replace in replacements]
+    regex_funcs = [_create_regex_func(search, replace) for search, replace in replacements]
     # search files and replace
     for sub_path in tuple(path.glob("**/*")):
         if not sub_path.is_file() or is_binary(str(sub_path)):
             continue
         content = sub_path.read_text()
         total = 0
-        for regex, func in regexs:
+        for regex, func in regex_funcs:
             content, counts = regex.subn(func, content)
             total += counts
         if total:
             sub_path.write_text(content)
 
 
-def _compile(search: PathOrStr) -> re.Pattern:
+def _create_regex_func(search: Search, replace: str) -> tuple[re.Pattern, Callable]:
     """Create Regular Expression for `search`."""
-    sep_esc = re.escape(os.path.sep)
+    if isinstance(search, re.Pattern):
+        return search, lambda mat: replace
+
     if isinstance(search, Path):
+        sep_esc = re.escape(os.path.sep)
         esc = re.escape(str(search))
-        return re.compile(rf"{esc}([A-Za-z0-9_{sep_esc}]*)")
+        pat = re.compile(rf"{esc}([A-Za-z0-9_{sep_esc}]*)")
+        return pat, _substitute_path(replace)
 
-    return re.compile(rf"{re.escape(search)}()")
+    return re.compile(rf"{re.escape(search)}()"), _substitute_path(replace)
 
 
-def _substitute_func(replace: str):
+def _substitute_path(replace: str):
     """Factory for Substitution Function."""
 
     def func(mat):
