@@ -24,7 +24,7 @@
 
 [project]
 name = "test2ref"
-version = "0.5.0"
+dynamic = ["version"]
 description = "Testing Against Learned Reference Data"
 readme = "README.md"
 authors = [
@@ -71,6 +71,10 @@ doc = [
 
 [tool.pdm.build]
 includes = ["src/test2ref"]
+
+[tool.pdm.version]
+source = "scm"
+fallback_version = "0.0.0"
 
 [tool.ruff]
 line-length = 120
