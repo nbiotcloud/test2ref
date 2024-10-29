@@ -86,6 +86,8 @@ select = [
     "E", "W",
     # pydocstyle
     "D",
+    # pep8-naming
+    "N",
     # flake8-2020
     "YTT",
     # flake8-bugbear

@@ -24,6 +24,7 @@
 """Basic Testing."""
 
 import logging
+import re
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -299,3 +300,30 @@ def test_flavor(tmp_path):
 
     assert not (ref_path / "file.txt").exists()
     assert (ref_path / "one" / "file.txt").read_text() == "Content"
+
+
+def test_regex(tmp_path):
+    """Regular Expression Support."""
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    gen_path.mkdir()
+
+    (gen_path / "file.txt").write_text("""\
+Hello World 1
+Hello Mars 2
+Hello Venus 3
+""")
+
+    replacements = ((re.compile(r"Hello [A-z]+"), "Hello PLANET"),)
+
+    configure(ref_update=True)
+    assert_refdata(ref_path, gen_path, replacements=replacements)
+
+    assert (
+        (ref_path / "file.txt").read_text()
+        == """\
+Hello PLANET 1
+Hello PLANET 2
+Hello PLANET 3
+"""
+    )
