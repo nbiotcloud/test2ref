@@ -1,9 +1,8 @@
-site_name: TEST2REF
-site_description: Testing Against Learned Reference Data
+site_name: "TEST2REF"
+site_description: "Testing Against Learned Reference Data"
 site_url: https://test2ref.readthedocs.io/en
 repo_url: https://github.com/nbiotcloud/test2ref
-#strict: true
-copyright: Copyright (c) 2024 nbiotcloud
+copyright: Copyright (c) 2024-2025 nbiotcloud
 
 theme:
   name: material
@@ -28,8 +27,8 @@ theme:
 
 nav:
   - Get Started:
-    - Welcome to TEST2REF: index.md
-    - Contributing: contributing.md
+      - Welcome to TEST2REF: index.md
+      - Contributing: contributing.md
 
 plugins:
   - search

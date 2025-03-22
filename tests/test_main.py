@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2024 nbiotcloud
+# Copyright (c) 2024-2025 nbiotcloud
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from pytest import mark, raises
+
 from test2ref import (
     CONFIG,
     DEFAULT_EXCLUDES,
