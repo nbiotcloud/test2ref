@@ -59,7 +59,7 @@ API
 import os
 import re
 import subprocess
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
 from shutil import copytree, ignore_patterns, rmtree
 from tempfile import TemporaryDirectory
@@ -95,7 +95,7 @@ CONFIG = {
 }
 
 
-def configure(ref_path: Path | None = None, ref_update: bool | None = None, excludes: Excludes | None = None):
+def configure(ref_path: Path | None = None, ref_update: bool | None = None, excludes: Excludes | None = None) -> None:
     """
     Configure.
 
@@ -120,7 +120,7 @@ def assert_refdata(
     replacements: Replacements | None = None,
     excludes: Iterable[str] | None = None,
     flavor: str = "",
-):  # pylint: disable=too-many-arguments
+) -> None:  # pylint: disable=too-many-arguments
     """
     Compare Output of `arg` generated at `path` with reference.
 
@@ -209,7 +209,7 @@ def assert_refdata(
         assert_paths(ref_path, gen_path, excludes=excludes)
 
 
-def assert_paths(ref_path: Path, gen_path: Path, excludes: Iterable[str] | None = None):
+def assert_paths(ref_path: Path, gen_path: Path, excludes: Iterable[str] | None = None) -> None:
     """
     Compare Output of `ref_path` with `gen_path`.
 
@@ -230,7 +230,7 @@ def assert_paths(ref_path: Path, gen_path: Path, excludes: Iterable[str] | None 
         raise AssertionError(error.stdout.decode("utf-8")) from None
 
 
-def _remove_empty_dirs(path: Path):
+def _remove_empty_dirs(path: Path) -> None:
     """Remove Empty Directories within ``path``."""
     for sub_path in tuple(path.glob("**/*")):
         if not sub_path.exists() or not sub_path.is_dir():
@@ -245,7 +245,7 @@ def _remove_empty_dirs(path: Path):
                 break
 
 
-def _replace_path(path: Path, replacements: StrReplacements):
+def _replace_path(path: Path, replacements: StrReplacements) -> None:
     paths = [path]
     while paths:
         path = paths.pop()
@@ -258,10 +258,10 @@ def _replace_path(path: Path, replacements: StrReplacements):
             paths.extend(path.iterdir())
 
 
-def _replace_content(path: Path, replacements: Replacements):
+def _replace_content(path: Path, replacements: Replacements) -> None:
     """Replace ``replacements`` for text files in ``path``."""
     # pre-compile regexs and create substitution functions
-    regex_funcs = [_create_regex_func(search, replace) for search, replace in replacements]
+    regex_funcs = tuple(_create_regex_funcs(replacements))
     # search files and replace
     for sub_path in tuple(path.glob("**/*")):
         if not sub_path.is_file() or is_binary(str(sub_path)):
@@ -275,26 +275,40 @@ def _replace_content(path: Path, replacements: Replacements):
             sub_path.write_text(content)
 
 
-def _create_regex_func(search: Search, replace: str) -> tuple[re.Pattern, Callable]:
+def _create_regex_funcs(replacements: Replacements) -> Iterator[tuple[re.Pattern, Callable]]:
     """Create Regular Expression for `search`."""
-    if isinstance(search, re.Pattern):
-        return search, lambda mat: replace
+    for search, replace in replacements:
+        # already regex
+        if isinstance(search, re.Pattern):
+            yield search, _substitute_str(replace)
 
-    if isinstance(search, Path):
-        sep_esc = re.escape(os.path.sep)
-        esc = re.escape(str(search))
-        pat = re.compile(rf"{esc}([A-Za-z0-9_{sep_esc}]*)")
-        return pat, _substitute_path(replace)
+        # Path
+        elif isinstance(search, Path):
+            sep_esc = re.escape(os.sep)
+            regex = rf"{re.escape(str(search))}([A-Za-z0-9_{sep_esc}]*)"
+            yield re.compile(f"{regex}"), _substitute_path(replace, os.sep)
+            if os.altsep:
+                altregex = regex.replace(sep_esc, re.escape(os.altsep))
+                yield re.compile(f"{altregex}"), _substitute_path(replace, os.altsep)
 
-    return re.compile(rf"{re.escape(search)}()"), _substitute_path(replace)
+        # str
+        else:
+            yield re.compile(rf"{re.escape(search)}()"), _substitute_path(replace, os.sep)
 
 
-def _substitute_path(replace: str):
+def _substitute_path(replace: str, sep: str):
     """Factory for Substitution Function."""
 
-    def func(mat):
+    def func(mat: re.Match) -> str:
         sub = mat.group(1)
-        sub = sub.replace(os.path.sep, "/")
+        sub = sub.replace(sep, "/")
         return f"{replace}{sub}"
+
+    return func
+
+
+def _substitute_str(replace: str):
+    def func(mat: re.Match) -> str:
+        return replace
 
     return func

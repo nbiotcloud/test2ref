@@ -24,6 +24,7 @@
 """Basic Testing."""
 
 import logging
+import os
 import re
 import sys
 from pathlib import Path
@@ -144,9 +145,18 @@ def test_replace(tmp_path: Path):
     """Test Replacements."""
     one_path = tmp_path / "one" / "deep"
     other_path = tmp_path / "other"
+    altsep_path = str(one_path / "altsep")
+    if os.altsep:
+        altsep_path = altsep_path.replace(os.sep, os.altsep)
 
     one_path.mkdir(parents=True)
-    (one_path / "file.txt").write_text(f"Something\n Over Multiple Lines\n With {one_path}/inside\n {other_path} too\n")
+    (one_path / "file.txt").write_text(f"""\
+Something
+Over Multiple Lines
+With {one_path}/inside
+{other_path} too
+{altsep_path}
+""")
 
     configure(ref_update=False)
     replacements: Replacements = [
