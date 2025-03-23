@@ -87,7 +87,7 @@ Excludes: TypeAlias = tuple[str, ...]
 
 DEFAULT_REF_PATH: Path = PRJ_PATH / "tests" / "refdata"
 DEFAULT_REF_UPDATE: bool = (PRJ_PATH / ".test2ref").exists()
-DEFAULT_EXCLUDES: Excludes = ("__pycache__", ".*cache")
+DEFAULT_EXCLUDES: Excludes = ("__pycache__", ".tool_cache", ".cache")
 CONFIG = {
     "ref_path": DEFAULT_REF_PATH,
     "ref_update": DEFAULT_REF_UPDATE,
