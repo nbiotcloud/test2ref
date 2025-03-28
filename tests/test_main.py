@@ -24,7 +24,6 @@
 """Basic Testing."""
 
 import logging
-import os
 import re
 import sys
 from pathlib import Path
@@ -143,19 +142,27 @@ def test_caplog(tmp_path: Path, caplog, fail: bool):
 
 def test_replace(tmp_path: Path):
     """Test Replacements."""
-    one_path = tmp_path / "one" / "deep"
-    other_path = tmp_path / "other"
-    altsep_path = str(one_path / "altsep")
-    if os.altsep:
-        altsep_path = altsep_path.replace(os.sep, os.altsep)
+    one_path = tmp_path / "one" / "de-ep"
+    inside_path = one_path / "inside"
+    other_path = tmp_path / "oth-er"
+    altsep_path = (one_path / "alt-sep").as_posix()
+    one_path_str = str(one_path)
 
     one_path.mkdir(parents=True)
     (one_path / "file.txt").write_text(f"""\
 Something
 Over Multiple Lines
+With {one_path}
 With {one_path}/inside
+With {one_path!s}
+With {one_path!s}/inside
+With {one_path_str!r}
+With {inside_path}
+With {inside_path}/mixed
 {other_path} too
+{other_path}/mixed too
 {altsep_path}
+{altsep_path}/mixed
 """)
 
     configure(ref_update=False)

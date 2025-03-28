@@ -284,24 +284,32 @@ def _create_regex_funcs(replacements: Replacements) -> Iterator[tuple[re.Pattern
 
         # Path
         elif isinstance(search, Path):
+            search_str = str(search)
             sep_esc = re.escape(os.sep)
-            regex = rf"{re.escape(str(search))}([A-Za-z0-9_{sep_esc}]*)"
-            yield re.compile(f"{regex}"), _substitute_path(replace, os.sep)
+            regex = rf"{re.escape(search_str)}([A-Za-z0-9_{sep_esc}]*)"
+            yield re.compile(f"{regex}"), _substitute_path(replace, (os.sep,))
             if os.altsep:
-                altregex = regex.replace(sep_esc, re.escape(os.altsep))
-                yield re.compile(f"{altregex}"), _substitute_path(replace, os.altsep)
+                doublesep = f"{os.sep}{os.sep}"
+
+                search_repr = search_str.replace(os.sep, doublesep)
+                doubleregex = rf"{re.escape(search_repr)}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
+                yield re.compile(f"{doubleregex}"), _substitute_path(replace, (doublesep, os.sep, os.altsep))
+
+                altregex = rf"{re.escape(search.as_posix())}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
+                yield re.compile(f"{altregex}"), _substitute_path(replace, (os.sep, os.altsep))
 
         # str
         else:
-            yield re.compile(rf"{re.escape(search)}()"), _substitute_path(replace, os.sep)
+            yield re.compile(re.escape(search)), _substitute_str(replace)
 
 
-def _substitute_path(replace: str, sep: str):
+def _substitute_path(replace: str, seps: tuple[str, ...] = ()):
     """Factory for Substitution Function."""
 
     def func(mat: re.Match) -> str:
         sub = mat.group(1)
-        sub = sub.replace(sep, "/")
+        for sep in seps:
+            sub = sub.replace(sep, "/")
         return f"{replace}{sub}"
 
     return func
