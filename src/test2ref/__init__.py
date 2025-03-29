@@ -120,7 +120,7 @@ def assert_refdata(
     replacements: Replacements | None = None,
     excludes: Iterable[str] | None = None,
     flavor: str = "",
-) -> None:  # pylint: disable=too-many-arguments
+) -> None:
     """
     Compare Output of `arg` generated at `path` with reference.
 
@@ -164,7 +164,6 @@ def assert_refdata(
         ```
 
     """
-    # pylint: disable=too-many-locals
     ref_basepath: Path = CONFIG["ref_path"]  # type: ignore[assignment]
     if isinstance(arg, Path):
         ref_path = ref_basepath / arg
