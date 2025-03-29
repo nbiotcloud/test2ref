@@ -1,4 +1,13 @@
 Something
- RAINBOW Multiple Lines
- With $GEN/inside
- $OTHER_PATH too
+RAINBOW Multiple Lines
+With $GEN
+With $GEN/inside
+With $GEN
+With $GEN/inside
+With '$GEN'
+With $GEN/inside
+With $GEN/inside/mixed
+$OTHER_PATH too
+$OTHER_PATH/mixed too
+$GEN/alt-sep
+$GEN/alt-sep/mixed
