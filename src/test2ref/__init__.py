@@ -93,6 +93,8 @@ CONFIG = {
     "ref_update": DEFAULT_REF_UPDATE,
     "excludes": DEFAULT_EXCLUDES,
 }
+ENCODING = "utf-8"
+ENCODING_ERRORS = "surrogateescape"
 
 
 def configure(ref_path: Path | None = None, ref_update: bool | None = None, excludes: Excludes | None = None) -> None:
@@ -187,12 +189,12 @@ def assert_refdata(
 
         if capsys:
             captured = capsys.readouterr()
-            (gen_path / "stdout.txt").write_text(captured.out)
-            (gen_path / "stderr.txt").write_text(captured.err)
+            (gen_path / "stdout.txt").write_text(captured.out, encoding=ENCODING, errors=ENCODING_ERRORS)
+            (gen_path / "stderr.txt").write_text(captured.err, encoding=ENCODING, errors=ENCODING_ERRORS)
 
         if caplog:
             logpath = gen_path / "logging.txt"
-            with logpath.open("w", encoding="utf-8") as file:
+            with logpath.open("w", encoding=ENCODING, errors=ENCODING_ERRORS) as file:
                 for record in caplog.records:
                     file.write(f"{record.levelname:7s}  {record.name}  {record.message}\n")
             caplog.clear()
@@ -265,13 +267,13 @@ def _replace_content(path: Path, replacements: Replacements) -> None:
     for sub_path in tuple(path.glob("**/*")):
         if not sub_path.is_file() or is_binary(str(sub_path)):
             continue
-        content = sub_path.read_text()
+        content = sub_path.read_text(encoding=ENCODING, errors=ENCODING_ERRORS)
         total = 0
         for regex, func in regex_funcs:
             content, counts = regex.subn(func, content)
             total += counts
         if total:
-            sub_path.write_text(content)
+            sub_path.write_text(content, encoding=ENCODING, errors=ENCODING_ERRORS)
 
 
 def _create_regex_funcs(replacements: Replacements) -> Iterator[tuple[re.Pattern, Callable]]:
