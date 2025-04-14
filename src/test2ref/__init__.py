@@ -24,8 +24,7 @@
 """
 Testing Against Learned Reference Data.
 
-Concept
--------
+# Concept
 
 A unit test creates files in a temporary folder `tmp_path`.
 :any:`assert_refdata()` is called at the end of the test.
@@ -44,16 +43,19 @@ If the files does **not** exists, the **Testing Mode** is selected.
 
 Next to that, stdout, stderr and logging can be included in the reference automatically.
 
-Example:
--------
+# Minimal Example
+
+!!! example
+
+    ```python
     >>> def test_something(tmp_path, capsys):
     ...     (tmp_path / "file.txt").write_text("Hello Mars")
     ...     print("Hello World")
     ...     assert_refdata(test_something, tmp_path, capsys=capsys)
 
-API
----
+    ```
 
+# API
 """
 
 import os
