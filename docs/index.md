@@ -11,10 +11,10 @@
 * [Sources](https://github.com/nbiotcloud/test2ref)
 * [Issues](https://github.com/nbiotcloud/test2ref/issues)
 
-## Installation
-
 Installing it is pretty easy:
 
 ```bash
 pip install test2ref
 ```
+
+::: test2ref
