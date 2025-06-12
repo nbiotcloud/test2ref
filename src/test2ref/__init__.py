@@ -288,7 +288,10 @@ def _replace_content(path: Path, replacements: Replacements) -> None:
         content = sub_path.read_text(encoding=ENCODING, errors=ENCODING_ERRORS)
         total = 0
         for regex, func in regex_funcs:
+            orig = content
             content, counts = regex.subn(func, content)
+            if orig != content:
+                print(regex, func)
             total += counts
         if total:
             sub_path.write_text(content, encoding=ENCODING, errors=ENCODING_ERRORS)
