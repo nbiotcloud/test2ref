@@ -61,6 +61,12 @@ def test_configure(tmp_path):
         configure(excludes=("a", "b"))
         assert CONFIG["excludes"] == ("a", "b")
 
+        configure(add_excludes=("c", "d"))
+        assert CONFIG["excludes"] == ("a", "b", "c", "d")
+
+        configure(rm_excludes=("b", "d"))
+        assert CONFIG["excludes"] == ("a", "c")
+
     assert CONFIG["ref_path"] == DEFAULT_REF_PATH
     assert CONFIG["ref_update"] == DEFAULT_REF_UPDATE
     assert CONFIG["excludes"] == DEFAULT_EXCLUDES
