@@ -25,6 +25,7 @@
 
 import logging
 import re
+import site
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -345,3 +346,34 @@ Hello PLANET 2
 Hello PLANET 3
 """
     )
+
+
+def test_site_home(tmp_path):
+    """SITE + HOME Replacement."""
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    ref_path.mkdir()
+    gen_path.mkdir()
+
+    paths = (*site.getsitepackages(), site.getusersitepackages())
+
+    def variants(base):
+        return str(base), str(repr), Path(base), Path(base) / "sub"
+
+    with (gen_path / "file.txt").open("w") as file:
+        for path in paths:
+            for variant in variants(path):
+                file.write(f"{variant}\n")
+        for variant in variants(Path.home()):
+            file.write(f"{variant}\n")
+
+    with (ref_path / "file.txt").open("w") as file:
+        for _ in paths:
+            for variant in variants("$SITE"):
+                file.write(f"{variant}\n")
+
+        for variant in variants("$HOME"):
+            file.write(f"{variant}\n")
+
+    configure(ref_update=False, ref_path=ref_path)
+    assert_refdata(ref_path, gen_path)
