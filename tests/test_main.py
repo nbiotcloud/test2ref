@@ -358,7 +358,7 @@ def test_site_home(tmp_path):
     paths = (*site.getsitepackages(), site.getusersitepackages())
 
     def variants(base):
-        return str(base), str(repr), Path(base), Path(base) / "sub"
+        return str(base), Path(base), Path(base) / "sub"
 
     with (gen_path / "file.txt").open("w") as file:
         for path in paths:
@@ -370,10 +370,11 @@ def test_site_home(tmp_path):
     with (ref_path / "file.txt").open("w") as file:
         for _ in paths:
             for variant in variants("$SITE"):
-                file.write(f"{variant}\n")
-
+                line = variant.as_posix() if isinstance(variant, Path) else variant
+                file.write(f"{line}\n")
         for variant in variants("$HOME"):
-            file.write(f"{variant}\n")
+            line = variant.as_posix() if isinstance(variant, Path) else variant
+            file.write(f"{line}\n")
 
     configure(ref_update=False, ref_path=ref_path)
     assert_refdata(ref_path, gen_path)
