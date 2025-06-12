@@ -354,13 +354,38 @@ Hello PLANET 3
     )
 
 
+OPEN_NEWLINES = (
+    None,  # System Default
+    "",  # no translation
+    "\n",  # no translation
+    "\r\n",  # windows
+)
+
+
+@mark.parametrize("gen", OPEN_NEWLINES)
+@mark.parametrize("ref", OPEN_NEWLINES)
+def test_newline(tmp_path, gen, ref):
+    """No newline sensitivity."""
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    ref_path.mkdir()
+    gen_path.mkdir()
+
+    with (gen_path / "file.txt").open("w", newline=gen) as file:
+        file.write("line0\n")
+        file.write("line1\n")
+
+    with (ref_path / "file.txt").open("w", newline=ref) as file:
+        file.write("line0\n")
+        file.write("line1\n")
+
+
 def test_site_home(tmp_path):
     """SITE + HOME Replacement."""
     ref_path = tmp_path / "ref"
     gen_path = tmp_path / "gen"
     ref_path.mkdir()
     gen_path.mkdir()
-
     paths = (*site.getsitepackages(), site.getusersitepackages())
 
     def variants(base):
