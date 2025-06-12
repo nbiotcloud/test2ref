@@ -188,11 +188,12 @@ def assert_refdata(
     sitepaths = (*site.getsitepackages(), site.getusersitepackages())
 
     gen_rplcs: Replacements = [
-        *((path, "$SITE") for path in sitepaths),
+        *((Path(path) / "Lib" / "site-packages", "$SITE") for path in sitepaths),  # dirty hack for win
+        *((Path(path), "$SITE") for path in sitepaths),
         (PRJ_PATH, "$PRJ"),
         (path, "$GEN"),
-        (Path.home(), "$HOME"),
         *rplcs,
+        (Path.home(), "$HOME"),
     ]
     gen_excludes: Excludes = (*CONFIG["excludes"], *(excludes or []))
 
@@ -304,8 +305,6 @@ def _create_regex_funcs(replacements: Replacements) -> Iterator[tuple[re.Pattern
         elif isinstance(search, Path):
             search_str = str(search)
             sep_esc = re.escape(os.sep)
-            regex = rf"{re.escape(search_str)}([A-Za-z0-9_{sep_esc}]*)"
-            yield re.compile(f"{regex}"), _substitute_path(replace, (os.sep,))
             if os.altsep:
                 doublesep = f"{os.sep}{os.sep}"
 
@@ -315,6 +314,8 @@ def _create_regex_funcs(replacements: Replacements) -> Iterator[tuple[re.Pattern
 
                 altregex = rf"{re.escape(search.as_posix())}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
                 yield re.compile(f"{altregex}"), _substitute_path(replace, (os.sep, os.altsep))
+            regex = rf"{re.escape(search_str)}([A-Za-z0-9_{sep_esc}]*)"
+            yield re.compile(f"{regex}"), _substitute_path(replace, (os.sep,))
 
         # str
         else:
