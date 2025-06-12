@@ -91,10 +91,12 @@ Excludes: TypeAlias = tuple[str, ...]
 DEFAULT_REF_PATH: Path = PRJ_PATH / "tests" / "refdata"
 DEFAULT_REF_UPDATE: bool = (PRJ_PATH / ".test2ref").exists()
 DEFAULT_EXCLUDES: Excludes = ("__pycache__", ".tool_cache", ".cache")
+DEFAULT_IGNORE_SPACES: bool = False
 CONFIG = {
     "ref_path": DEFAULT_REF_PATH,
     "ref_update": DEFAULT_REF_UPDATE,
     "excludes": DEFAULT_EXCLUDES,
+    "ignore_spaces": DEFAULT_IGNORE_SPACES,
 }
 ENCODING = "utf-8"
 ENCODING_ERRORS = "surrogateescape"
@@ -106,6 +108,7 @@ def configure(
     excludes: Excludes | None = None,
     add_excludes: Excludes | None = None,
     rm_excludes: Excludes | None = None,
+    ignore_spaces: bool | None = False,
 ) -> None:
     """
     Configure.
@@ -116,6 +119,7 @@ def configure(
         excludes: Paths to be excluded in all runs.
         add_excludes: Additionally Excluded Files
         rm_excludes: Not Excluded Files
+        ignore_spaces: Ignore Space Changes - `False` by default
     """
     if ref_path is not None:
         CONFIG["ref_path"] = ref_path
@@ -127,6 +131,8 @@ def configure(
         CONFIG["excludes"] = (*CONFIG["excludes"], *add_excludes)
     if rm_excludes:
         CONFIG["excludes"] = tuple(exclude for exclude in CONFIG["excludes"] if exclude not in rm_excludes)  # type: ignore[attr-defined]
+    if ignore_spaces is not None:
+        CONFIG["ignore_spaces"] = ignore_spaces
 
 
 def assert_refdata(
@@ -250,6 +256,8 @@ def assert_paths(ref_path: Path, gen_path: Path, excludes: Iterable[str] | None 
         cmd = ["diff", "-ru", "--strip-trailing-cr", str(ref_path), str(gen_path)]
         for exclude in diff_excludes:
             cmd.extend(("--exclude", exclude))
+        if CONFIG["ignore_spaces"]:
+            cmd.append("-b")
         subprocess.run(cmd, check=True, capture_output=True)  # noqa: S603
     except subprocess.CalledProcessError as error:
         raise AssertionError(error.stdout.decode("utf-8")) from None
