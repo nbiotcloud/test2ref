@@ -379,6 +379,9 @@ def test_newline(tmp_path, gen, ref):
         file.write("line0\n")
         file.write("line1\n")
 
+    configure(ref_update=False, ref_path=ref_path)
+    assert_refdata(ref_path, gen_path)
+
 
 def test_site_home(tmp_path):
     """SITE + HOME Replacement."""
@@ -408,4 +411,27 @@ def test_site_home(tmp_path):
             file.write(f"{line}\n")
 
     configure(ref_update=False, ref_path=ref_path)
+    assert_refdata(ref_path, gen_path)
+
+
+def test_trailing_spaces(tmp_path):
+    """Test Trailing Whitespaces."""
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    ref_path.mkdir()
+    gen_path.mkdir()
+
+    with (gen_path / "file.txt").open("w") as file:
+        file.write("line0\n")
+        file.write("line1 \n")
+
+    with (ref_path / "file.txt").open("w") as file:
+        file.write("line0 \n")
+        file.write("line1\n")
+
+    configure(ref_update=False, ref_path=ref_path)
+    with raises(AssertionError):
+        assert_refdata(ref_path, gen_path)
+
+    configure(ref_update=False, ref_path=ref_path, ignore_spaces=True)
     assert_refdata(ref_path, gen_path)
