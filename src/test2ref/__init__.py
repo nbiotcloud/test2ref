@@ -99,7 +99,13 @@ ENCODING = "utf-8"
 ENCODING_ERRORS = "surrogateescape"
 
 
-def configure(ref_path: Path | None = None, ref_update: bool | None = None, excludes: Excludes | None = None) -> None:
+def configure(
+    ref_path: Path | None = None,
+    ref_update: bool | None = None,
+    excludes: Excludes | None = None,
+    add_excludes: Excludes | None = None,
+    rm_excludes: Excludes | None = None,
+) -> None:
     """
     Configure.
 
@@ -107,6 +113,8 @@ def configure(ref_path: Path | None = None, ref_update: bool | None = None, excl
         ref_path: Path for reference files. "tests/refdata" by default
         ref_update: Update reference files. True by default if `.test2ref` file exists.
         excludes: Paths to be excluded in all runs.
+        add_excludes: Additionally Excluded Files
+        rm_excludes: Not Excluded Files
     """
     if ref_path is not None:
         CONFIG["ref_path"] = ref_path
@@ -114,6 +122,10 @@ def configure(ref_path: Path | None = None, ref_update: bool | None = None, excl
         CONFIG["ref_update"] = ref_update
     if excludes:
         CONFIG["excludes"] = excludes
+    if add_excludes:
+        CONFIG["excludes"] = (*CONFIG["excludes"], *add_excludes)
+    if rm_excludes:
+        CONFIG["excludes"] = tuple(exclude for exclude in CONFIG["excludes"] if exclude not in rm_excludes)  # type: ignore[attr-defined]
 
 
 def assert_refdata(
