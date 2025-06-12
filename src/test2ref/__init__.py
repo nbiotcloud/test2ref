@@ -225,7 +225,7 @@ def assert_paths(ref_path: Path, gen_path: Path, excludes: Iterable[str] | None 
     """
     diff_excludes: Excludes = (*CONFIG["excludes"], *(excludes or []))
     try:
-        cmd = ["diff", "-ru", str(ref_path), str(gen_path)]
+        cmd = ["diff", "-ru", "--strip-trailing-cr", str(ref_path), str(gen_path)]
         for exclude in diff_excludes:
             cmd.extend(("--exclude", exclude))
         subprocess.run(cmd, check=True, capture_output=True)  # noqa: S603
