@@ -309,12 +309,14 @@ def _create_regex_funcs(replacements: Replacements) -> Iterator[tuple[re.Pattern
                 doublesep = f"{os.sep}{os.sep}"
 
                 search_repr = search_str.replace(os.sep, doublesep)
-                doubleregex = rf"{re.escape(search_repr)}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
+                doubleregex = rf"(?i){re.escape(search_repr)}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
                 yield re.compile(f"{doubleregex}"), _substitute_path(replace, (doublesep, os.sep, os.altsep))
 
-                altregex = rf"{re.escape(search.as_posix())}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
+                altregex = rf"(?i){re.escape(search.as_posix())}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
                 yield re.compile(f"{altregex}"), _substitute_path(replace, (os.sep, os.altsep))
-            regex = rf"{re.escape(search_str)}([A-Za-z0-9_{sep_esc}]*)"
+                regex = rf"(?i){re.escape(search_str)}([A-Za-z0-9_{sep_esc}]*)"
+            else:
+                regex = rf"{re.escape(search_str)}([A-Za-z0-9_{sep_esc}]*)"
             yield re.compile(f"{regex}"), _substitute_path(replace, (os.sep,))
 
         # str
