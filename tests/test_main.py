@@ -25,6 +25,7 @@
 
 import logging
 import re
+import site
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -59,6 +60,12 @@ def test_configure(tmp_path):
 
         configure(excludes=("a", "b"))
         assert CONFIG["excludes"] == ("a", "b")
+
+        configure(add_excludes=("c", "d"))
+        assert CONFIG["excludes"] == ("a", "b", "c", "d")
+
+        configure(rm_excludes=("b", "d"))
+        assert CONFIG["excludes"] == ("a", "c")
 
     assert CONFIG["ref_path"] == DEFAULT_REF_PATH
     assert CONFIG["ref_update"] == DEFAULT_REF_UPDATE
@@ -371,6 +378,34 @@ def test_newline(tmp_path, gen, ref):
     with (ref_path / "file.txt").open("w", newline=ref) as file:
         file.write("line0\n")
         file.write("line1\n")
+
+
+def test_site_home(tmp_path):
+    """SITE + HOME Replacement."""
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    ref_path.mkdir()
+    gen_path.mkdir()
+    paths = (*site.getsitepackages(), site.getusersitepackages())
+
+    def variants(base):
+        return str(base), Path(base), Path(base) / "sub"
+
+    with (gen_path / "file.txt").open("w") as file:
+        for path in paths:
+            for variant in variants(path):
+                file.write(f"{variant}\n")
+        for variant in variants(Path.home()):
+            file.write(f"{variant}\n")
+
+    with (ref_path / "file.txt").open("w") as file:
+        for _ in paths:
+            for variant in variants("$SITE"):
+                line = variant.as_posix() if isinstance(variant, Path) else variant
+                file.write(f"{line}\n")
+        for variant in variants("$HOME"):
+            line = variant.as_posix() if isinstance(variant, Path) else variant
+            file.write(f"{line}\n")
 
     configure(ref_update=False, ref_path=ref_path)
     assert_refdata(ref_path, gen_path)

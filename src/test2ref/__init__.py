@@ -60,6 +60,7 @@ Next to that, stdout, stderr and logging can be included in the reference automa
 
 import os
 import re
+import site
 import subprocess
 from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
@@ -99,7 +100,13 @@ ENCODING = "utf-8"
 ENCODING_ERRORS = "surrogateescape"
 
 
-def configure(ref_path: Path | None = None, ref_update: bool | None = None, excludes: Excludes | None = None) -> None:
+def configure(
+    ref_path: Path | None = None,
+    ref_update: bool | None = None,
+    excludes: Excludes | None = None,
+    add_excludes: Excludes | None = None,
+    rm_excludes: Excludes | None = None,
+) -> None:
     """
     Configure.
 
@@ -107,6 +114,8 @@ def configure(ref_path: Path | None = None, ref_update: bool | None = None, excl
         ref_path: Path for reference files. "tests/refdata" by default
         ref_update: Update reference files. True by default if `.test2ref` file exists.
         excludes: Paths to be excluded in all runs.
+        add_excludes: Additionally Excluded Files
+        rm_excludes: Not Excluded Files
     """
     if ref_path is not None:
         CONFIG["ref_path"] = ref_path
@@ -114,6 +123,10 @@ def configure(ref_path: Path | None = None, ref_update: bool | None = None, excl
         CONFIG["ref_update"] = ref_update
     if excludes:
         CONFIG["excludes"] = excludes
+    if add_excludes:
+        CONFIG["excludes"] = (*CONFIG["excludes"], *add_excludes)
+    if rm_excludes:
+        CONFIG["excludes"] = tuple(exclude for exclude in CONFIG["excludes"] if exclude not in rm_excludes)  # type: ignore[attr-defined]
 
 
 def assert_refdata(
@@ -178,7 +191,16 @@ def assert_refdata(
     ref_path.mkdir(parents=True, exist_ok=True)
     rplcs: Replacements = replacements or ()  # type: ignore[assignment]
     path_rplcs: StrReplacements = [(srch, rplc) for srch, rplc in rplcs if isinstance(srch, str)]
-    gen_rplcs: Replacements = [(PRJ_PATH, "$PRJ"), (path, "$GEN"), *rplcs]
+    sitepaths = (*site.getsitepackages(), site.getusersitepackages())
+
+    gen_rplcs: Replacements = [
+        *((Path(path) / "Lib" / "site-packages", "$SITE") for path in sitepaths),  # dirty hack for win
+        *((Path(path), "$SITE") for path in sitepaths),
+        (PRJ_PATH, "$PRJ"),
+        (path, "$GEN"),
+        *rplcs,
+        (Path.home(), "$HOME"),
+    ]
     gen_excludes: Excludes = (*CONFIG["excludes"], *(excludes or []))
 
     with TemporaryDirectory() as temp_dir:
@@ -289,17 +311,19 @@ def _create_regex_funcs(replacements: Replacements) -> Iterator[tuple[re.Pattern
         elif isinstance(search, Path):
             search_str = str(search)
             sep_esc = re.escape(os.sep)
-            regex = rf"{re.escape(search_str)}([A-Za-z0-9_{sep_esc}]*)"
-            yield re.compile(f"{regex}"), _substitute_path(replace, (os.sep,))
             if os.altsep:
                 doublesep = f"{os.sep}{os.sep}"
 
                 search_repr = search_str.replace(os.sep, doublesep)
-                doubleregex = rf"{re.escape(search_repr)}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
+                doubleregex = rf"(?i){re.escape(search_repr)}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
                 yield re.compile(f"{doubleregex}"), _substitute_path(replace, (doublesep, os.sep, os.altsep))
 
-                altregex = rf"{re.escape(search.as_posix())}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
+                altregex = rf"(?i){re.escape(search.as_posix())}([A-Za-z0-9\-_{sep_esc}{re.escape(os.altsep)}]*)"
                 yield re.compile(f"{altregex}"), _substitute_path(replace, (os.sep, os.altsep))
+                regex = rf"(?i){re.escape(search_str)}([A-Za-z0-9_{sep_esc}]*)"
+            else:
+                regex = rf"{re.escape(search_str)}([A-Za-z0-9_{sep_esc}]*)"
+            yield re.compile(f"{regex}"), _substitute_path(replace, (os.sep,))
 
         # str
         else:
