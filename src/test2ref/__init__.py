@@ -190,6 +190,12 @@ def assert_refdata(
             assert_refdata(test_example, tmp_path, capsys=capsys, caplog=caplog)
         ```
 
+    The following replacements are included automatically:
+
+    * Python Installation Directories: `$SITE`
+    * Current Working Directory: `$PRJ`
+    * Argument `path`: `$GEN`
+    * Home Directory: `$HOME`
     """
     ref_basepath: Path = CONFIG["ref_path"]  # type: ignore[assignment]
     if isinstance(arg, Path):
@@ -201,12 +207,10 @@ def assert_refdata(
     ref_path.mkdir(parents=True, exist_ok=True)
     rplcs: Replacements = replacements or ()  # type: ignore[assignment]
     path_rplcs: StrReplacements = [(srch, rplc) for srch, rplc in rplcs if isinstance(srch, str)]
-    sitepaths = (*site.getsitepackages(), site.getusersitepackages())
-
+    sitepaths = [*site.getsitepackages(), site.getusersitepackages(), sys.prefix]
     gen_rplcs: Replacements = [
         *((Path(path) / "Lib" / "site-packages", "$SITE") for path in sitepaths),  # dirty hack for win
         *((Path(path), "$SITE") for path in sitepaths),
-        (Path(sys.prefix), "$SYSPREFIX"),
         (PRJ_PATH, "$PRJ"),
         (path, "$GEN"),
         *rplcs,
