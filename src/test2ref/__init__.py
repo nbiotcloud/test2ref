@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2024-2025 nbiotcloud
+# Copyright (c) 2024-2026 nbiotcloud
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -63,6 +63,7 @@ import re
 import site
 import subprocess
 from collections.abc import Callable, Iterable, Iterator
+from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree, ignore_patterns, rmtree
 from tempfile import TemporaryDirectory
@@ -143,6 +144,7 @@ def assert_refdata(
     replacements: Replacements | None = None,
     excludes: Iterable[str] | None = None,
     flavor: str = "",
+    known: Path | None = None,
 ) -> None:
     """
     Compare Output of `arg` generated at `path` with reference.
@@ -160,6 +162,7 @@ def assert_refdata(
         replacements: pairs of things to be replaced.
         excludes: Files and directories to be excluded.
         flavor: Flavor for different variants.
+        known: Path with directories and files which are known and excluded as soon as they are identical.
 
     !!! example "Minimal Example"
 
@@ -229,9 +232,12 @@ def assert_refdata(
                     file.write(f"{record.levelname:7s}  {record.name}  {record.message}\n")
             caplog.clear()
 
-        _remove_empty_dirs(gen_path)
-
         _replace_content(gen_path, gen_rplcs)
+
+        if known:
+            _remove_known(known, gen_path)
+
+        _remove_empty_dirs(gen_path)
 
         if CONFIG["ref_update"]:
             rmtree(ref_path, ignore_errors=True)
@@ -356,3 +362,11 @@ def _substitute_str(replace: str):
         return replace
 
     return func
+
+
+def _remove_known(known: Path, path: Path) -> None:
+    cmp = dircmp(known, path)
+    for samefile in cmp.same_files:
+        (path / samefile).unlink()
+    for samedir in cmp.common_dirs:
+        _remove_known(known / samedir, path / samedir)

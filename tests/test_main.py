@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2024-2025 nbiotcloud
+# Copyright (c) 2024-2026 nbiotcloud
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -435,3 +435,46 @@ def test_trailing_spaces(tmp_path):
 
     configure(ref_update=False, ref_path=ref_path, ignore_spaces=True)
     assert_refdata(ref_path, gen_path)
+
+
+def test_known(tmp_path):
+    """Known Reference."""
+    known_path = tmp_path / "known"
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    known_path.mkdir()
+    ref_path.mkdir()
+    gen_path.mkdir()
+
+    # Some known
+    (known_path / "sub0").mkdir()
+    (known_path / "sub1").mkdir()
+    with (known_path / "file.txt").open("w") as file:
+        file.write("line0\n")
+    with (known_path / "sub0" / "file0.txt").open("w") as file:
+        file.write("line0\n")
+    with (known_path / "sub0" / "file1.txt").open("w") as file:
+        file.write("line0\n")
+    with (known_path / "sub1" / "file0.txt").open("w") as file:
+        file.write("line0\n")
+
+    # Some gen
+    (gen_path / "sub0").mkdir()
+    (gen_path / "sub1").mkdir()
+    with (gen_path / "file.txt").open("w") as file:
+        file.write("line1\n")
+    with (gen_path / "sub0" / "file0.txt").open("w") as file:
+        file.write("line0\n")
+    with (gen_path / "sub0" / "file1.txt").open("w") as file:
+        file.write("line1\n")
+    with (gen_path / "sub1" / "file0.txt").open("w") as file:
+        file.write("line0\n")
+
+    # Some ref
+    (ref_path / "sub0").mkdir()
+    with (ref_path / "file.txt").open("w") as file:
+        file.write("line1\n")
+    with (ref_path / "sub0" / "file1.txt").open("w") as file:
+        file.write("line1\n")
+
+    assert_refdata(ref_path, gen_path, known=known_path)
