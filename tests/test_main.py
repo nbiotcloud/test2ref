@@ -384,12 +384,12 @@ def test_newline(tmp_path, gen, ref):
 
 
 def test_site_home(tmp_path):
-    """SITE + HOME Replacement."""
+    """SITE + HOME + SYSPREFIX Replacement."""
     ref_path = tmp_path / "ref"
     gen_path = tmp_path / "gen"
     ref_path.mkdir()
     gen_path.mkdir()
-    paths = (*site.getsitepackages(), site.getusersitepackages())
+    paths = [*site.getsitepackages(), site.getusersitepackages(), sys.prefix]
 
     def variants(base):
         return str(base), Path(base), Path(base) / "sub"
