@@ -62,6 +62,7 @@ import os
 import re
 import site
 import subprocess
+import sys
 from collections.abc import Callable, Iterable, Iterator
 from filecmp import dircmp
 from pathlib import Path
@@ -205,6 +206,7 @@ def assert_refdata(
     gen_rplcs: Replacements = [
         *((Path(path) / "Lib" / "site-packages", "$SITE") for path in sitepaths),  # dirty hack for win
         *((Path(path), "$SITE") for path in sitepaths),
+        (Path(sys.prefix), "$SYSPREFIX"),
         (PRJ_PATH, "$PRJ"),
         (path, "$GEN"),
         *rplcs,
