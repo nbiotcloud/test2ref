@@ -218,8 +218,8 @@ def assert_refdata(
     ]
     gen_excludes: Excludes = (*CONFIG["excludes"], *(excludes or []))
 
-    with TemporaryDirectory() as temp_dir:
-        gen_path = Path(temp_dir)
+    with TemporaryDirectory() as tmp_gen_dir:
+        gen_path = Path(tmp_gen_dir)
 
         ignore = ignore_patterns(*gen_excludes)
         copytree(path, gen_path, dirs_exist_ok=True, ignore=ignore)
@@ -251,8 +251,17 @@ def assert_refdata(
         _remove_empty_dirs(gen_path)
 
         if CONFIG["ref_update"]:
-            rmtree(ref_path, ignore_errors=True)
-            copytree(gen_path, ref_path)
+            # nearly atomic update of ref_path
+            with TemporaryDirectory(dir=ref_path.parent) as tmp_ref_dir:
+                # long-lasting copy operation to destination-file-system)
+                tmp_ref_path_new = Path(tmp_ref_dir) / "new"
+                tmp_ref_path_old = Path(tmp_ref_dir) / "old"
+                copytree(gen_path, tmp_ref_path_new)
+                # nearly atomic update
+                ref_path.rename(tmp_ref_path_old)
+                tmp_ref_path_new.rename(ref_path)
+                # remove obsolete files
+                rmtree(tmp_ref_path_old, ignore_errors=True)
 
         assert_paths(ref_path, gen_path, excludes=excludes)
 
