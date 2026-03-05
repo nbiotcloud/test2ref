@@ -449,19 +449,30 @@ def test_known(tmp_path):
     # Some known
     (known_path / "sub0").mkdir()
     (known_path / "sub1").mkdir()
-    with (known_path / "file.txt").open("w") as file:
+    (known_path / "sub2").mkdir()
+    (known_path / "sub3" / "sub2").mkdir(parents=True)
+    with (known_path / "file0.txt").open("w") as file:
         file.write("line0\n")
+    with (known_path / "file1.txt").open("w") as file:
+        file.write("line1\n")
     with (known_path / "sub0" / "file0.txt").open("w") as file:
         file.write("line0\n")
     with (known_path / "sub0" / "file1.txt").open("w") as file:
         file.write("line0\n")
     with (known_path / "sub1" / "file0.txt").open("w") as file:
         file.write("line0\n")
+    with (known_path / "sub2" / "file0.txt").open("w") as file:
+        file.write("line0\n")
+    with (known_path / "sub2" / "file0.txt").open("w") as file:
+        file.write("line0\n")
+    with (known_path / "sub3" / "sub2" / "file0.txt").open("w") as file:
+        file.write("line0\n")
 
     # Some gen
     (gen_path / "sub0").mkdir()
     (gen_path / "sub1").mkdir()
-    with (gen_path / "file.txt").open("w") as file:
+    (gen_path / "sub2").mkdir()
+    with (gen_path / "file0.txt").open("w") as file:
         file.write("line1\n")
     with (gen_path / "sub0" / "file0.txt").open("w") as file:
         file.write("line0\n")
@@ -472,9 +483,13 @@ def test_known(tmp_path):
 
     # Some ref
     (ref_path / "sub0").mkdir()
-    with (ref_path / "file.txt").open("w") as file:
+    with (ref_path / "file0.txt").open("w") as file:
         file.write("line1\n")
     with (ref_path / "sub0" / "file1.txt").open("w") as file:
         file.write("line1\n")
+    with (ref_path / "missing.txt").open("w") as file:
+        file.write("file1.txt\n")
+        file.write("sub3\n")
+        file.write("sub2/file0.txt\n")
 
     assert_refdata(ref_path, gen_path, known=known_path)

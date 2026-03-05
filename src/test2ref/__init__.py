@@ -241,7 +241,12 @@ def assert_refdata(
         _replace_content(gen_path, gen_rplcs)
 
         if known:
-            _remove_known(known, gen_path)
+            missing = _remove_known(known, gen_path)
+            if missing:
+                missingpath = gen_path / "missing.txt"
+                with missingpath.open("w", encoding=ENCODING, errors=ENCODING_ERRORS) as file:
+                    for miss in missing:
+                        file.write(f"{miss.as_posix()}\n")
 
         _remove_empty_dirs(gen_path)
 
@@ -370,9 +375,13 @@ def _substitute_str(replace: str):
     return func
 
 
-def _remove_known(known: Path, path: Path) -> None:
+def _remove_known(known: Path, path: Path, base: Path | None = None) -> list[Path]:
+    missing: list[Path] = []
+    base = base or Path()
     cmp = dircmp(known, path)
     for samefile in cmp.same_files:
         (path / samefile).unlink()
-    for samedir in cmp.common_dirs:
-        _remove_known(known / samedir, path / samedir)
+    missing.extend(base / left for left in sorted(cmp.left_only))
+    for samedir in sorted(cmp.common_dirs):
+        missing.extend(_remove_known(known / samedir, path / samedir, base=base / samedir))
+    return missing
