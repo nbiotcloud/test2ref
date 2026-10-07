@@ -34,13 +34,15 @@ from pytest import mark, raises
 
 from test2ref import (
     CONFIG,
-    DEFAULT_EXCLUDES,
-    DEFAULT_REF_PATH,
-    DEFAULT_REF_UPDATE,
     Replacements,
     assert_paths,
     assert_refdata,
     configure,
+)
+from test2ref._config import (
+    DEFAULT_EXCLUDES,
+    DEFAULT_REF_PATH,
+    DEFAULT_REF_UPDATE,
 )
 
 LOGGER = logging.getLogger("dummy")
