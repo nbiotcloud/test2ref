@@ -26,9 +26,9 @@ import site
 import subprocess
 import sys
 from collections.abc import Callable, Iterable
-from filecmp import dircmp
+from filecmp import cmp, dircmp
 from pathlib import Path
-from shutil import copytree, ignore_patterns, rmtree
+from shutil import copy2, copytree, ignore_patterns, rmtree
 from tempfile import TemporaryDirectory
 from typing import Any
 
@@ -154,8 +154,11 @@ def assert_refdata(
             with TemporaryDirectory(dir=ref_path.parent) as tmp_ref_dir:
                 tmp_ref_path_new = Path(tmp_ref_dir) / "new"
                 tmp_ref_path_old = Path(tmp_ref_dir) / "old"
-                # Copy to the destination file system.
-                copytree(gen_path, tmp_ref_path_new)
+                copytree(
+                    gen_path,
+                    tmp_ref_path_new,
+                    copy_function=lambda src, dst: _copy_or_link(src, dst, gen_path, ref_path),
+                )
                 # Swap in the new reference and remove obsolete files.
                 ref_path.rename(tmp_ref_path_old)
                 tmp_ref_path_new.rename(ref_path)
@@ -185,6 +188,20 @@ def assert_paths(ref_path: Path, gen_path: Path, excludes: Iterable[str] | None 
         subprocess.run(cmd, check=True, capture_output=True)  # noqa: S603
     except subprocess.CalledProcessError as error:
         raise AssertionError(error.stdout.decode("utf-8")) from None
+
+
+def _copy_or_link(src: str, dst: str, gen_path: Path, ref_path: Path) -> str:
+    source = Path(src)
+    reference = ref_path / source.relative_to(gen_path)
+    if (
+        reference.is_file()
+        and not reference.is_symlink()
+        and not source.is_symlink()
+        and cmp(reference, source, shallow=False)
+    ):
+        Path(dst).hardlink_to(reference)
+        return dst
+    return copy2(src, dst)
 
 
 def _remove_empty_dirs(path: Path) -> None:

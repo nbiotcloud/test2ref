@@ -299,6 +299,31 @@ def test_path_abs(tmp_path):
     assert (ref_path / "file.txt").read_text() == "Content"
 
 
+def test_ref_update_only_replaces_changed_files(tmp_path):
+    """Only replace reference files whose content changed."""
+    ref_path = tmp_path / "ref"
+    gen_path = tmp_path / "gen"
+    ref_path.mkdir()
+    gen_path.mkdir()
+
+    unchanged = ref_path / "unchanged.txt"
+    unchanged.write_text("Unchanged\n")
+    (ref_path / "changed.txt").write_text("Before\n")
+    (ref_path / "obsolete.txt").write_text("Obsolete\n")
+    (gen_path / "unchanged.txt").write_text("Unchanged\n")
+    (gen_path / "changed.txt").write_text("After!\n")
+    (gen_path / "new.txt").write_text("New\n")
+    unchanged_inode = unchanged.stat().st_ino
+
+    configure(ref_update=True, ref_path=tmp_path)
+    assert_refdata(Path("ref"), gen_path)
+
+    assert (ref_path / "unchanged.txt").stat().st_ino == unchanged_inode
+    assert (ref_path / "changed.txt").read_text() == "After!\n"
+    assert (ref_path / "new.txt").read_text() == "New\n"
+    assert not (ref_path / "obsolete.txt").exists()
+
+
 def test_path_rel(tmp_path):
     """Explicit Relative Path."""
     ref_path = tmp_path / "ref"
