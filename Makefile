@@ -37,13 +37,13 @@ checktypes: .venv/.valid ## [ALL] Run Type-Checking via 'mypy'
 
 
 .PHONY: doc
-doc: .venv/.valid ## [ALL] Build Documentation via 'mkdocs'
-	${ENV} mkdocs build
+doc: .venv/.valid ## [ALL] Build Documentation via 'properdocs'
+	${ENV} properdocs build
 
 
 .PHONY: doc-serve
-doc-serve: .venv/.valid ## Start Local Documentation Server via 'mkdocs'
-	${ENV} mkdocs serve --no-strict
+doc-serve: .venv/.valid ## Start Local Documentation Server via 'properdocs'
+	${ENV} properdocs serve --no-strict
 
 
 .PHONY: code
