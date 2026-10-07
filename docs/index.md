@@ -17,4 +17,18 @@ Installing it is pretty easy:
 pip install test2ref
 ```
 
+## Pytest Plugin
+
+The pytest plugin is loaded automatically when `test2ref` and pytest are installed.
+Use `--test2ref` to update reference data, or `--no-test2ref` to compare without
+updating:
+
+```bash
+pytest --test2ref
+pytest --no-test2ref
+```
+
+If neither option is given, the existing default is preserved: reference data is
+updated when a `.test2ref` file exists in the project root.
+
 ::: test2ref
