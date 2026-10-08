@@ -4,16 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
-## [Unreleased]
+## [v1.3.0] - 2026-10-08
 
 ### Added
+- Added a pytest plugin.
 - Added a changelog to record release history and notable changes.
 
 ### Changed
-- No unreleased changes.
-
-### Fixed
-- No unreleased fixes.
+- Split the implementation into multiple modules.
+- Improved performance when processing large changesets.
+- Replaced MkDocs with ProperDocs for documentation.
 
 ## [v1.2.3] - 2026-03-05
 
