@@ -43,6 +43,9 @@ dependencies = [
 "Documentation" = "https://test2ref.readthedocs.io/en/stable/"
 "Bug Tracker" = "https://github.com/nbiotcloud/test2ref/issues"
 
+[project.entry-points.pytest11]
+test2ref = "test2ref._pytest_plugin"
+
 [dependency-groups]
 dev = [
     "contextlib-chdir>=1.0.2",
